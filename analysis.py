@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""Reproducible C3/C4 morphometric analysis; see README.md for methodology.
-
-Clinical variables are accessed only after unsupervised model selection.
-No notebook state, remote services, or participant data are embedded here.
-"""
 
 from __future__ import annotations
 
