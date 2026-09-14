@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""Reproducible C3/C4 morphometric analysis; see README.md for methodology.
+
+Clinical variables are accessed only after unsupervised model selection.
+No notebook state, remote services, or participant data are embedded here.
+"""
 
 from __future__ import annotations
 
@@ -7,8 +13,35 @@ import importlib.metadata
 import json
 import logging
 import platform
+import sys
 from itertools import combinations
 from pathlib import Path
+
+# DATA LOADING — Google Colab or local Python
+# Colab: reuse /content/data.xlsx, or show a file-upload widget if absent.
+# Local Python: use data.xlsx in the current directory, or --data PATH.
+FILE_PATH = Path('/content/data.xlsx') if Path('/content').is_dir() else Path('data.xlsx')
+
+
+def input_path(explicit=None):
+    """Resolve an explicit workbook, the default file, or a Colab upload."""
+    if explicit is not None:
+        path = Path(explicit)
+    elif FILE_PATH.is_file():
+        path = FILE_PATH
+    else:
+        try:
+            from google.colab import files
+        except ImportError as exc:
+            raise FileNotFoundError('Place data.xlsx in the current directory or use --data PATH.') from exc
+        uploaded = files.upload()
+        candidates = [name for name in uploaded if name.lower().endswith('.xlsx')]
+        if len(candidates) != 1:
+            raise ValueError('Upload exactly one .xlsx workbook.')
+        path = Path(candidates[0])
+    if not path.is_file():
+        raise FileNotFoundError(f'Workbook not found: {path}')
+    return path
 
 import matplotlib
 matplotlib.use("Agg")
@@ -318,8 +351,10 @@ def characterize(df, ratios, stage_col, pc, labels, tables):
     table2 = []
     for stage in sorted(data.Baccetti.unique()):
         row = {'Baccetti_stage':stage}
-        for sex in ['Female', 'Male']:
-            subset = data[(data.Baccetti == stage) & (data.Sex == sex)]
+        for sex in ['Overall', 'Female', 'Male']:
+            subset = data[data.Baccetti == stage]
+            if sex != 'Overall':
+                subset = subset[subset.Sex == sex]
             for cluster in sorted(data.Cluster.unique()):
                 count = int((subset.Cluster == cluster).sum())
                 row[f'{sex}_Cluster_{cluster}_n'] = count
@@ -444,12 +479,16 @@ def run(args):
     LOG.info('Completed: %s, k=%d. Outputs: %s', primary.Model, primary.k, out)
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--data', type=Path, required=True, help='Path to the input .xlsx workbook')
+    parser.add_argument('--data', type=Path, help='Workbook; defaults to data.xlsx or a Colab upload')
     parser.add_argument('--sheet', default=0, help='Worksheet name; defaults to the first worksheet')
     parser.add_argument('--output', type=Path, default=Path('results'), help='New or empty results directory')
-    args = parser.parse_args()
+    # Pasted notebook cells inherit kernel arguments; %run and CLI keep theirs.
+    if argv is None and 'ipykernel' in sys.modules and not sys.argv[0].endswith('analysis.py'):
+        argv = []
+    args = parser.parse_args(argv)
+    args.data = input_path(args.data)
     with threadpool_limits(limits=1):
         run(args)
 
