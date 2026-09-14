@@ -102,32 +102,6 @@ Convergence warnings are not suppressed; failed clustering fits stop execution.
 No absolute-size/combined-feature sensitivity analyses, alternative scalers,
 HDBSCAN, or additional regression models are run.
 
-## Execution
-
-Use Python 3.12 and install dependencies in an isolated environment:
-
-```bash
-python -m venv .venv
-```
-
-Activate it on Windows PowerShell with `.venv\Scripts\Activate.ps1`, or on
-Linux/macOS with `source .venv/bin/activate`, then run:
-
-```bash
-python -m pip install -r requirements.txt
-python analysis.py --data "/path/to/data.xlsx" --output results
-```
-
-To select a worksheet by name:
-
-```bash
-python analysis.py --data "/path/to/data.xlsx" --sheet "Sheet1" --output results_named_sheet
-```
-
-The output directory must be new or empty. The full analysis includes all
-resampling iterations and can take several minutes or longer depending on
-hardware. Progress is written to the terminal and `run.log`.
-
 ## Generated files
 
 - `tables/`: quality-control audit, preprocessing parameters, PCA variance and
